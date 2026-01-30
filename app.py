@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 
 from src.data_preprocessing import preprocess_data
 from src.clustering import perform_clustering
@@ -7,24 +8,24 @@ from src.insights_generator import generate_insights
 
 st.set_page_config(page_title="Shopper Behavior Analysis", layout="wide")
 
-st.title("🛍 Shopper Behavior Analysis Dashboard")
+st.title("🛍 Shopper Behavior Analysis")
 
-# Load data
-raw_data_path = "data/raw_data.csv"
-processed_data_path = "data/processed_data.csv"
+DATA_PATH = "data/raw_data.csv"
 
-# Preprocess
-df = preprocess_data(raw_data_path, processed_data_path)
+# Check if file exists
+if not os.path.exists(DATA_PATH):
+    st.error("❌ Dataset not found! Please upload raw_data.csv in data folder.")
+    st.stop()
+
+# Run preprocessing
+df = preprocess_data(DATA_PATH, "data/processed_data.csv")
 
 # Clustering
 clustered_data, _ = perform_clustering(df)
 
-# Display Data
 st.subheader("Customer Data Preview")
 st.dataframe(clustered_data.head())
 
-# Insights
 st.subheader("AI Generated Insights")
-insights = generate_insights(clustered_data)
-for i in insights:
-    st.write("•", i)
+for insight in generate_insights(clustered_data):
+    st.write("•", insight)
