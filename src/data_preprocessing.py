@@ -4,14 +4,14 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 def preprocess_data(input_path, output_path):
     df = pd.read_csv(input_path)
 
-    # -------------------------
+    # -----------------------------
     # Clean column names
-    # -------------------------
+    # -----------------------------
     df.columns = df.columns.str.strip()
 
-    # -------------------------
-    # Convert numeric columns safely
-    # -------------------------
+    # -----------------------------
+    # Force numeric conversion
+    # -----------------------------
     numeric_cols = [
         'Age',
         'Purchase Amount (USD)',
@@ -24,12 +24,12 @@ def preprocess_data(input_path, output_path):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Fill missing numeric values
+    # Replace NaN with median
     df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
 
-    # -------------------------
-    # Encode categorical columns safely
-    # -------------------------
+    # -----------------------------
+    # Encode categorical columns
+    # -----------------------------
     categorical_cols = [
         'Gender',
         'Category',
@@ -47,15 +47,15 @@ def preprocess_data(input_path, output_path):
         if col in df.columns:
             df[col] = encoder.fit_transform(df[col].astype(str))
 
-    # -------------------------
-    # Scale numeric columns
-    # -------------------------
+    # -----------------------------
+    # Scale numeric columns safely
+    # -----------------------------
     scaler = StandardScaler()
     df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
 
-    # -------------------------
-    # Save processed data
-    # -------------------------
+    # -----------------------------
+    # Save cleaned data
+    # -----------------------------
     df.to_csv(output_path, index=False)
 
     return df
