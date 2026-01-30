@@ -10,22 +10,23 @@ st.set_page_config(page_title="Shopper Behavior Analysis", layout="wide")
 
 st.title("🛍 Shopper Behavior Analysis")
 
-DATA_PATH = "data/raw_data.csv"
+RAW_PATH = "data/raw_data.csv"
+PROCESSED_PATH = "data/processed_data.csv"
 
-# Check if file exists
-if not os.path.exists(DATA_PATH):
-    st.error("❌ Dataset not found! Please upload raw_data.csv in data folder.")
+# Safety check
+if not os.path.exists(RAW_PATH):
+    st.error("❌ raw_data.csv not found in data folder.")
     st.stop()
 
-# Run preprocessing
-df = preprocess_data(DATA_PATH, "data/processed_data.csv")
+# Preprocess
+df = preprocess_data(RAW_PATH, PROCESSED_PATH)
 
 # Clustering
-clustered_data, _ = perform_clustering(df)
+clustered_df, _ = perform_clustering(df)
 
 st.subheader("Customer Data Preview")
-st.dataframe(clustered_data.head())
+st.dataframe(clustered_df.head())
 
 st.subheader("AI Generated Insights")
-for insight in generate_insights(clustered_data):
+for insight in generate_insights(clustered_df):
     st.write("•", insight)
