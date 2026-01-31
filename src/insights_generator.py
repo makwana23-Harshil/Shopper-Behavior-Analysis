@@ -8,4 +8,3 @@ def generate_insights(df):
     insights.append(f"Cluster {top_cluster} contains the highest number of customers")
 
     return insights
-
