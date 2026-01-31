@@ -6,21 +6,18 @@ from src.clustering import perform_clustering
 from src.insights_generator import generate_insights
 
 st.set_page_config(page_title="Shopper Behavior Analysis", layout="wide")
-
 st.title("🛍 Shopper Behavior Analysis")
 
 RAW_PATH = "data/raw_data.csv"
 
-if not os.path.exists(RAW_PATH):
-    st.error("❌ raw_data.csv not found.")
-    st.stop()
+df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed_data.csv")
 
-df = preprocess_data(RAW_PATH, "data/processed_data.csv")
-clustered_df, _ = perform_clustering(df)
+clustered_df, _ = perform_clustering(df_scaled)
+df_original["Cluster"] = clustered_df["Cluster"]
 
 st.subheader("Customer Data")
-st.dataframe(clustered_df.head())
+st.dataframe(df_original.head())
 
 st.subheader("AI Insights")
-for i in generate_insights(clustered_df):
-    st.write("•", i)
+for insight in generate_insights(df_original):
+    st.write("•", insight)
