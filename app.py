@@ -10,7 +10,7 @@ from src.insights_generator import generate_insights
 st.set_page_config(page_title="Shopper Behavior Analytics", layout="wide")
 
 # ---------------- DARK MODE ----------------
-dark_mode = st.sidebar.toggle("🌙 Dark Mode")
+dark_mode = st.sidebar.toggle(" Dark Mode")
 
 if dark_mode:
     st.markdown("""
@@ -29,7 +29,7 @@ clustered_df, _ = perform_clustering(df_scaled)
 df_original["Cluster"] = clustered_df["Cluster"]
 
 # ---------------- FILTERS ----------------
-st.sidebar.header("Filters")
+st.sidebar.header(" Filters")
 
 gender = st.sidebar.multiselect(
     "Gender", df_original["Gender"].unique(), default=df_original["Gender"].unique()
@@ -55,7 +55,7 @@ if filtered_df.empty:
     st.stop()
 
 # ---------------- KPI SECTION ----------------
-st.markdown("## Key Metrics")
+st.markdown("##  Key Metrics")
 
 col1, col2, col3 = st.columns(3)
 
@@ -109,13 +109,13 @@ ax3.set_yticklabels(corr.columns)
 plt.colorbar(im)
 st.pyplot(fig3)
 
-st.markdown("## Download Filtered Data")
+st.markdown("##  Download Filtered Data")
 
 csv = filtered_df.to_csv(index=False).encode("utf-8")
 
 st.download_button(
-    label="Download CSV",
-    data=csv
+    label=" Download CSV",
+    data=csv,
     file_name="filtered_customer_data.csv",
     mime="text/csv"
 )
@@ -127,7 +127,7 @@ for insight in generate_insights(filtered_df):
     st.markdown(f" {insight}")
 
 # ---------------- DATA PREVIEW ----------------
-with st.expander(" View Filtered Data"):
+with st.expander("View Filtered Data"):
     st.dataframe(filtered_df.head(10))
 
 #-------------------Auto summary -----------------------------------
@@ -147,10 +147,10 @@ Overall, customer behavior shows clear segmentation patterns that can be used fo
 st.info(summary_text)
 
 #__________________________
-st.markdown("## 👤 Customer Persona")
+st.markdown("##  Customer Persona")
 
 persona = f"""
-### 🧍 Typical Customer Profile
+###  Typical Customer Profile
 
 • **Spending Behavior:** Moderate spender  
 • **Shopping Pattern:** Belongs to Cluster {top_cluster}  
