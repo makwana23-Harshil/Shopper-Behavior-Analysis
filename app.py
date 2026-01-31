@@ -129,3 +129,34 @@ for insight in generate_insights(filtered_df):
 # ---------------- DATA PREVIEW ----------------
 with st.expander("📂 View Filtered Data"):
     st.dataframe(filtered_df.head(10))
+
+#-------------------Auto summary -----------------------------------
+st.markdown("## 🧠 Auto Summary")
+
+avg_spend = filtered_df["Purchase Amount (USD)"].mean()
+top_cluster = filtered_df["Cluster"].value_counts().idxmax()
+total_customers = len(filtered_df)
+
+summary_text = f"""
+This dataset contains **{total_customers} customers**.  
+The **average spending is ${avg_spend:.2f}**, indicating moderate purchasing behavior.  
+**Cluster {top_cluster}** represents the dominant customer group, suggesting a major opportunity for targeted marketing.  
+Overall, customer behavior shows clear segmentation patterns that can be used for personalization, promotions, and retention strategies.
+"""
+
+st.info(summary_text)
+
+#__________________________
+st.markdown("## 👤 Customer Persona")
+
+persona = f"""
+### 🧍 Typical Customer Profile
+
+• **Spending Behavior:** Moderate spender  
+• **Shopping Pattern:** Belongs to Cluster {top_cluster}  
+• **Price Sensitivity:** Responds well to discounts  
+• **Engagement Level:** Medium to High  
+• **Business Insight:** Best target for loyalty programs and personalized offers
+"""
+
+st.success(persona)
