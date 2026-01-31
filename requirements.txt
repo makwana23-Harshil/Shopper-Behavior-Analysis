@@ -4,6 +4,5 @@ numpy
 scikit-learn
 mlxtend
 matplotlib
-seaborn
+plotly
 altair==4.2.2
-
