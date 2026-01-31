@@ -1,45 +1,46 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import matplotlib.pyplot as plt
 
 from src.data_preprocessing import preprocess_data
 from src.clustering import perform_clustering
 from src.insights_generator import generate_insights
 
 # ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="Shopper Behavior Analytics",
-    layout="wide"
-)
+st.set_page_config(page_title="Shopper Behavior Analytics", layout="wide")
+
+# ---------------- DARK MODE ----------------
+dark_mode = st.sidebar.toggle("🌙 Dark Mode")
+
+if dark_mode:
+    st.markdown("""
+        <style>
+        .stApp { background-color: #0f172a; color: white; }
+        </style>
+    """, unsafe_allow_html=True)
+
+# ---------------- HEADER ----------------
+st.markdown("<h1 style='text-align:center;'>🛍 Shopper Behavior Analysis</h1>", unsafe_allow_html=True)
 
 # ---------------- LOAD DATA ----------------
-df_scaled, df_original = preprocess_data(
-    "data/raw_data.csv",
-    "data/processed.csv"
-)
-
+RAW_PATH = "data/raw_data.csv"
+df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed_data.csv")
 clustered_df, _ = perform_clustering(df_scaled)
 df_original["Cluster"] = clustered_df["Cluster"]
 
-# ---------------- SIDEBAR FILTERS ----------------
-st.sidebar.title("Filters")
+# ---------------- FILTERS ----------------
+st.sidebar.header("🔍 Filters")
 
 gender = st.sidebar.multiselect(
-    "Gender",
-    options=df_original["Gender"].unique(),
-    default=df_original["Gender"].unique()
+    "Gender", df_original["Gender"].unique(), default=df_original["Gender"].unique()
 )
 
 category = st.sidebar.multiselect(
-    "Category",
-    options=df_original["Category"].unique(),
-    default=df_original["Category"].unique()
+    "Category", df_original["Category"].unique(), default=df_original["Category"].unique()
 )
 
 season = st.sidebar.multiselect(
-    "Season",
-    options=df_original["Season"].unique(),
-    default=df_original["Season"].unique()
+    "Season", df_original["Season"].unique(), default=df_original["Season"].unique()
 )
 
 filtered_df = df_original[
@@ -48,73 +49,114 @@ filtered_df = df_original[
     (df_original["Season"].isin(season))
 ]
 
-# ---------------- HEADER ----------------
-st.title("🛍 Shopper Behavior Analysis")
-st.caption("Customer segmentation and behavioral insights dashboard")
-
+# ---------------- HANDLE EMPTY DATA ----------------
 if filtered_df.empty:
-    st.warning("No data available for selected filters.")
+    st.warning("⚠️ No data available for selected filters. Please change filters.")
     st.stop()
 
-# ---------------- KPI METRICS ----------------
-st.subheader("Key Metrics")
+# ---------------- KPI SECTION ----------------
+st.markdown("## 📌 Key Metrics")
 
 col1, col2, col3 = st.columns(3)
 
-col1.metric("Total Customers", len(filtered_df))
-col2.metric("Average Spending ($)", round(filtered_df["Purchase Amount (USD)"].mean(), 2))
-col3.metric("Customer Segments", filtered_df["Cluster"].nunique())
+with col1:
+    st.metric("👥 Customers", len(filtered_df))
+
+with col2:
+    avg_spend = filtered_df["Purchase Amount (USD)"].mean()
+    st.metric("💰 Avg Spending", f"${avg_spend:.2f}")
+
+with col3:
+    st.metric("🧩 Clusters", filtered_df["Cluster"].nunique())
 
 # ---------------- CHARTS ----------------
-st.subheader("Customer Distribution")
+st.markdown("## 📊 Visual Insights")
 
 col4, col5 = st.columns(2)
 
+# Bar Chart
 with col4:
-    fig1 = px.bar(
-        filtered_df,
-        x="Cluster",
-        title="Customers per Cluster",
-        color="Cluster",
-        template="plotly_white"
+    st.subheader("Customer Segments")
+    fig1, ax1 = plt.subplots()
+    filtered_df["Cluster"].value_counts().plot(
+        kind="bar", ax=ax1, color="#3b82f6"
     )
-    st.plotly_chart(fig1, use_container_width=True)
+    ax1.set_ylabel("Customers")
+    st.pyplot(fig1)
 
+# Pie Chart
 with col5:
-    fig2 = px.pie(
-        filtered_df,
-        names="Cluster",
-        title="Cluster Share",
-        hole=0.4,
-        template="plotly_white"
+    st.subheader("Cluster Distribution")
+    fig2, ax2 = plt.subplots()
+    filtered_df["Cluster"].value_counts().plot(
+        kind="pie", autopct="%1.1f%%", ax=ax2
     )
-    st.plotly_chart(fig2, use_container_width=True)
+    ax2.set_ylabel("")
+    st.pyplot(fig2)
 
 # ---------------- HEATMAP ----------------
-st.subheader("Correlation Analysis")
+st.markdown("## 🔥 Correlation Heatmap")
 
 numeric_df = filtered_df.select_dtypes(include=["int64", "float64"])
-fig3 = px.imshow(
-    numeric_df.corr(),
-    color_continuous_scale="Blues",
-    title="Feature Correlation Heatmap"
-)
-st.plotly_chart(fig3, use_container_width=True)
+corr = numeric_df.corr()
 
-# ---------------- AI INSIGHTS ----------------
-st.subheader("AI Insights")
+fig3, ax3 = plt.subplots(figsize=(10, 6))
+im = ax3.imshow(corr, cmap="coolwarm")
+ax3.set_xticks(range(len(corr.columns)))
+ax3.set_yticks(range(len(corr.columns)))
+ax3.set_xticklabels(corr.columns, rotation=45, ha="right")
+ax3.set_yticklabels(corr.columns)
+plt.colorbar(im)
+st.pyplot(fig3)
 
-for insight in generate_insights(filtered_df):
-    st.success(insight)
+st.markdown("## 📥 Download Filtered Data")
 
-# ---------------- DATA TABLE ----------------
-st.subheader("Filtered Data Preview")
-
-st.dataframe(filtered_df, use_container_width=True)
+csv = filtered_df.to_csv(index=False).encode("utf-8")
 
 st.download_button(
-    "Download CSV",
-    filtered_df.to_csv(index=False),
-    "filtered_data.csv",
-    "text/csv"
+    label="⬇️ Download CSV",
+    data=csv,
+    file_name="filtered_customer_data.csv",
+    mime="text/csv"
 )
+
+# ---------------- AI INSIGHTS ----------------
+st.markdown("## 🧠 AI Insights")
+
+for insight in generate_insights(filtered_df):
+    st.markdown(f"✅ {insight}")
+
+# ---------------- DATA PREVIEW ----------------
+with st.expander("📂 View Filtered Data"):
+    st.dataframe(filtered_df.head(10))
+
+#-------------------Auto summary -----------------------------------
+st.markdown("## 🧠 Auto Summary")
+
+avg_spend = filtered_df["Purchase Amount (USD)"].mean()
+top_cluster = filtered_df["Cluster"].value_counts().idxmax()
+total_customers = len(filtered_df)
+
+summary_text = f"""
+This dataset contains **{total_customers} customers**.  
+The **average spending is ${avg_spend:.2f}**, indicating moderate purchasing behavior.  
+**Cluster {top_cluster}** represents the dominant customer group, suggesting a major opportunity for targeted marketing.  
+Overall, customer behavior shows clear segmentation patterns that can be used for personalization, promotions, and retention strategies.
+"""
+
+st.info(summary_text)
+
+#__________________________
+st.markdown("## 👤 Customer Persona")
+
+persona = f"""
+### 🧍 Typical Customer Profile
+
+• **Spending Behavior:** Moderate spender  
+• **Shopping Pattern:** Belongs to Cluster {top_cluster}  
+• **Price Sensitivity:** Responds well to discounts  
+• **Engagement Level:** Medium to High  
+• **Business Insight:** Best target for loyalty programs and personalized offers
+"""
+
+st.success(persona)
