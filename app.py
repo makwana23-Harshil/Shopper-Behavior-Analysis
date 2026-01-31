@@ -89,10 +89,19 @@ with col5:
 st.markdown("## 🔥 Correlation Heatmap")
 
 numeric_df = df_original.select_dtypes(include=["int64", "float64"])
+corr = numeric_df.corr()
 
-fig3, ax3 = plt.subplots(figsize=(10, 6))
-sns.heatmap(numeric_df.corr(), annot=True, cmap="coolwarm", ax=ax3)
-st.pyplot(fig3)
+fig, ax = plt.subplots(figsize=(10, 6))
+im = ax.imshow(corr, cmap="coolwarm")
+
+ax.set_xticks(range(len(corr.columns)))
+ax.set_yticks(range(len(corr.columns)))
+ax.set_xticklabels(corr.columns, rotation=45, ha="right")
+ax.set_yticklabels(corr.columns)
+
+plt.colorbar(im)
+st.pyplot(fig)
+
 
 # ---------------- AI INSIGHTS ----------------
 st.markdown("## 🧠 AI Insights")
