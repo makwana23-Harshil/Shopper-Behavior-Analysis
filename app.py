@@ -1,5 +1,4 @@
 import streamlit as st
-import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -7,54 +6,78 @@ from src.data_preprocessing import preprocess_data
 from src.clustering import perform_clustering
 from src.insights_generator import generate_insights
 
-st.set_page_config(page_title="Shopper Behavior Analysis", layout="wide")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(
+    page_title="Shopper Behavior Analytics",
+    layout="wide",
+    page_icon="🛍️"
+)
 
-st.title("🛍 Shopper Behavior Analysis Dashboard")
+# ---------------- HEADER ----------------
+st.markdown(
+    """
+    <h1 style='text-align: center;'>🛍 Shopper Behavior Analysis</h1>
+    <p style='text-align: center; font-size:18px;'>
+    AI-powered customer segmentation & purchasing insights
+    </p>
+    """,
+    unsafe_allow_html=True
+)
 
+# ---------------- LOAD DATA ----------------
 RAW_PATH = "data/raw_data.csv"
-
-# Load and preprocess
 df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed_data.csv")
-
-# Clustering
 clustered_df, _ = perform_clustering(df_scaled)
 df_original["Cluster"] = clustered_df["Cluster"]
 
-# ======================
-# 📊 VISUALIZATION AREA
-# ======================
+# ---------------- KPI SECTION ----------------
+st.markdown("## 📌 Key Metrics")
 
-st.subheader("📊 Cluster Distribution")
-cluster_counts = df_original["Cluster"].value_counts()
+col1, col2, col3 = st.columns(3)
 
-fig1, ax1 = plt.subplots()
-ax1.bar(cluster_counts.index.astype(str), cluster_counts.values)
-ax1.set_xlabel("Cluster")
-ax1.set_ylabel("Number of Customers")
-st.pyplot(fig1)
+with col1:
+    st.metric("Total Customers", len(df_original))
 
-# ----------------------
+with col2:
+    avg_spend = df_original["Purchase Amount (USD)"].mean()
+    st.metric("Avg Spending ($)", f"{avg_spend:.2f}")
 
-st.subheader("💰 Average Spending per Cluster")
-avg_spend = df_original.groupby("Cluster")["Purchase Amount (USD)"].mean()
+with col3:
+    st.metric("Total Clusters", df_original["Cluster"].nunique())
 
-fig2, ax2 = plt.subplots()
-ax2.bar(avg_spend.index.astype(str), avg_spend.values)
-ax2.set_ylabel("Average Spend ($)")
-st.pyplot(fig2)
+# ---------------- CHARTS ----------------
+st.markdown("## 📊 Visual Insights")
 
-# ----------------------
+col4, col5 = st.columns(2)
 
-if "Frequency of Purchases" in df_original.columns:
-    st.subheader("🔁 Purchase Frequency Distribution")
-    fig3, ax3 = plt.subplots()
-    df_original["Frequency of Purchases"].value_counts().plot(kind="bar", ax=ax3)
-    st.pyplot(fig3)
+# Cluster Distribution
+with col4:
+    st.markdown("### Customer Segments")
+    fig1, ax1 = plt.subplots()
+    df_original["Cluster"].value_counts().plot(
+        kind="bar",
+        ax=ax1,
+        color="#4F8BF9"
+    )
+    ax1.set_xlabel("Cluster")
+    ax1.set_ylabel("Customers")
+    st.pyplot(fig1)
 
-# ======================
-# 🧠 AI INSIGHTS
-# ======================
+# Spending by Cluster
+with col5:
+    st.markdown("### Avg Spending per Cluster")
+    avg_cluster_spend = df_original.groupby("Cluster")["Purchase Amount (USD)"].mean()
+    fig2, ax2 = plt.subplots()
+    avg_cluster_spend.plot(kind="bar", ax=ax2, color="#22C55E")
+    ax2.set_ylabel("USD")
+    st.pyplot(fig2)
 
-st.subheader("🧠 AI Insights")
+# ---------------- AI INSIGHTS ----------------
+st.markdown("## 🧠 AI Insights")
+
 for insight in generate_insights(df_original):
-    st.write("•", insight)
+    st.markdown(f"✅ {insight}")
+
+# ---------------- DATA PREVIEW ----------------
+with st.expander("📂 View Sample Data"):
+    st.dataframe(df_original.head(10))
