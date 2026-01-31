@@ -2,187 +2,188 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-
 from src.data_preprocessing import preprocess_data
 from src.clustering import perform_clustering
 from src.insights_generator import generate_insights
 
-# ===================== CONFIG =====================
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Shopper Intelligence",
+    page_title="Shopper Intelligence | Analytics",
     page_icon="🛍️",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ===================== CSS (GLASSMORPHISM) =====================
+# ---------------- CUSTOM UI STYLING ----------------
 st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
+    /* Global Styles */
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
 
-.main {
-    background: linear-gradient(135deg, #0f172a, #020617);
-    color: white;
-}
+    /* Main Background */
+    .stApp {
+        background: radial-gradient(circle at top left, #1e293b, #0f172a);
+        color: #f8fafc;
+    }
 
-.glass {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
+    /* Sidebar Gradient */
+    [data-testid="stSidebar"] {
+        background-image: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
-.metric-card {
-    background: linear-gradient(135deg, #6366f1, #ec4899);
-    padding: 20px;
-    border-radius: 16px;
-    color: white;
-    text-align: center;
-}
+    /* Glassmorphism Cards */
+    div[data-testid="metric-container"], .stPlotlyChart, .persona-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    }
 
-.sidebar .sidebar-content {
-    background: linear-gradient(180deg, #020617, #0f172a);
-}
-</style>
+    /* Profile Card Styling */
+    .persona-card {
+        border-left: 5px solid #6366f1;
+    }
+    
+    .persona-header {
+        color: #6366f1;
+        font-weight: 800;
+        margin-bottom: 10px;
+    }
+
+    /* Metric Formatting */
+    [data-testid="stMetricValue"] {
+        font-weight: 700;
+        color: #6366f1;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# ===================== DATA =====================
-RAW_PATH = "data/raw_data.csv"
-df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed.csv")
-df_clustered, _ = perform_clustering(df_scaled)
-df_original["Cluster"] = df_clustered["Cluster"]
+# ---------------- DATA LOADING (Cached for Speed) ----------------
+@st.cache_data
+def load_and_process():
+    RAW_PATH = "data/raw_data.csv"
+    df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed_data.csv")
+    clustered_df, _ = perform_clustering(df_scaled)
+    df_original["Cluster"] = clustered_df["Cluster"]
+    return df_original
 
-# ===================== SIDEBAR =====================
-st.sidebar.markdown("## 🔍 Filters")
+df_original = load_and_process()
 
-gender = st.sidebar.multiselect("Gender", df_original["Gender"].unique(),
-                                 default=df_original["Gender"].unique())
+# ---------------- SIDEBAR FILTERS ----------------
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3081/3081559.png", width=80)
+    st.title("Filters")
+    
+    with st.expander("🎯 Target Demographics", expanded=True):
+        gender = st.multiselect("Gender", df_original["Gender"].unique(), default=df_original["Gender"].unique())
+        season = st.multiselect("Season", df_original["Season"].unique(), default=df_original["Season"].unique())
 
-category = st.sidebar.multiselect("Category", df_original["Category"].unique(),
-                                   default=df_original["Category"].unique())
+    with st.expander("📦 Product Categories", expanded=True):
+        category = st.multiselect("Category", df_original["Category"].unique(), default=df_original["Category"].unique())
 
-season = st.sidebar.multiselect("Season", df_original["Season"].unique(),
-                                 default=df_original["Season"].unique())
-
-filtered = df_original[
+filtered_df = df_original[
     (df_original["Gender"].isin(gender)) &
     (df_original["Category"].isin(category)) &
     (df_original["Season"].isin(season))
 ]
 
-# ===================== HEADER =====================
-st.markdown("""
-<h1 style='text-align:center;'>🛍 Shopper Behavior Intelligence</h1>
-<p style='text-align:center;'>AI-powered consumer analytics dashboard</p>
-""", unsafe_allow_html=True)
+# ---------------- HEADER ----------------
+st.markdown("# 🛍️ Shopper Behavior Intelligence")
+st.markdown("Analyze customer segmentation and purchasing patterns with AI-driven insights.")
 
-# ===================== TABS =====================
-tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Deep Analytics", "📁 Raw Data"])
+if filtered_df.empty:
+    st.warning("⚠️ No data matches your filter criteria.")
+    st.stop()
 
-# ======================================================
-# ===================== TAB 1 ==========================
-# ======================================================
-with tab1:
-    st.markdown("### 📌 Key Metrics")
+# ---------------- MAIN TABS ----------------
+tab_overview, tab_deep_dive, tab_data = st.tabs(["📈 Overview", "🧠 AI & Personas", "💾 Raw Data"])
 
-    col1, col2, col3 = st.columns(3)
+with tab_overview:
+    # KPI Metrics
+    col1, col2, col3, col4 = st.columns(4)
+    avg_spend = filtered_df["Purchase Amount (USD)"].mean()
+    
+    col1.metric("Total Customers", f"{len(filtered_df):,}")
+    col2.metric("Avg Spending", f"${avg_spend:.2f}")
+    col3.metric("Active Clusters", filtered_df["Cluster"].nunique())
+    col4.metric("Top Category", filtered_df["Category"].mode()[0])
 
-    col1.markdown(f"""
-    <div class='metric-card'>
-        <h3>{len(filtered)}</h3>
-        <p>Total Customers</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # Plotly Charts
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.subheader("Customer Segments")
+        fig_bar = px.bar(
+            filtered_df["Cluster"].value_counts().reset_index(),
+            x="index", y="Cluster",
+            labels={"index": "Cluster", "Cluster": "Count"},
+            color="Cluster",
+            color_continuous_scale="Viridis",
+            template="plotly_dark"
+        )
+        fig_bar.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_bar, use_container_width=True)
 
-    col2.markdown(f"""
-    <div class='metric-card'>
-        <h3>${filtered['Purchase Amount (USD)'].mean():.2f}</h3>
-        <p>Avg Spending</p>
-    </div>
-    """, unsafe_allow_html=True)
+    with c2:
+        st.subheader("Distribution %")
+        fig_pie = px.pie(
+            filtered_df, names="Cluster",
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.RdBu,
+            template="plotly_dark"
+        )
+        fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_pie, use_container_width=True)
 
-    col3.markdown(f"""
-    <div class='metric-card'>
-        <h3>{filtered['Cluster'].nunique()}</h3>
-        <p>Customer Segments</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ---------------- CHARTS ----------------
-    st.markdown("### 📊 Customer Distribution")
-
-    fig1 = px.bar(
-        filtered,
-        x="Cluster",
-        title="Customer Segments",
-        color="Cluster",
+    # Correlation Heatmap
+    st.subheader("🔥 Feature Correlation Matrix")
+    numeric_df = filtered_df.select_dtypes(include=["int64", "float64"])
+    corr = numeric_df.corr()
+    fig_heat = px.imshow(
+        corr, text_auto=".2f",
+        color_continuous_scale="RdBu_r",
         template="plotly_dark"
     )
+    st.plotly_chart(fig_heat, use_container_width=True)
 
-    fig2 = px.pie(
-        filtered,
-        names="Cluster",
-        title="Cluster Share",
-        hole=0.45,
-        template="plotly_dark"
-    )
+with tab_deep_dive:
+    col_a, col_b = st.columns([1, 1])
+    
+    with col_a:
+        st.markdown("### 🧠 AI Strategic Insights")
+        for insight in generate_insights(filtered_df):
+            st.info(f"💡 {insight}")
 
-    col4, col5 = st.columns(2)
-    col4.plotly_chart(fig1, use_container_width=True)
-    col5.plotly_chart(fig2, use_container_width=True)
+    with col_b:
+        st.markdown("### 👤 Customer Persona")
+        top_cluster = filtered_df["Cluster"].value_counts().idxmax()
+        st.markdown(f"""
+            <div class="persona-card">
+                <div class="persona-header">PRIMARY ARCHETYPE: Cluster {top_cluster}</div>
+                <p><b>Spending Profile:</b> ${avg_spend:.2f} (Average)</p>
+                <p><b>Psychographics:</b> High engagement in {season[0] if season else 'all seasons'}.</p>
+                <p><b>Recommendation:</b> Deploy loyalty rewards and personalized email triggers 
+                based on {category[0] if category else 'previous'} purchase history.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-# ======================================================
-# ===================== TAB 2 ==========================
-# ======================================================
-with tab2:
-    st.markdown("### 🔥 Correlation Heatmap")
-
-    corr = filtered.select_dtypes("number").corr()
-
-    heatmap = px.imshow(
-        corr,
-        text_auto=True,
-        color_continuous_scale="viridis",
-        title="Feature Correlation Matrix"
-    )
-
-    st.plotly_chart(heatmap, use_container_width=True)
-
-    # ---------------- PERSONA CARD ----------------
-    st.markdown("### 👤 Customer Persona")
-
-    top_cluster = filtered["Cluster"].value_counts().idxmax()
-
-    st.markdown(f"""
-    <div class='glass'>
-        <h3>🎯 Primary Customer Persona</h3>
-        <p><b>Cluster:</b> {top_cluster}</p>
-        <p><b>Spending:</b> Moderate to High</p>
-        <p><b>Behavior:</b> Repeat buyer, promotion responsive</p>
-        <p><b>Business Insight:</b> Ideal for loyalty & upselling campaigns</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ======================================================
-# ===================== TAB 3 ==========================
-# ======================================================
-with tab3:
-    st.markdown("### 📁 Raw Dataset")
-    st.dataframe(filtered, use_container_width=True)
-
+with tab_data:
+    st.markdown("### 📂 Filtered Dataset")
+    st.dataframe(filtered_df, use_container_width=True)
+    
+    csv = filtered_df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "⬇ Download CSV",
-        data=filtered.to_csv(index=False),
-        file_name="filtered_data.csv",
+        label="⬇️ Export Data as CSV",
+        data=csv,
+        file_name="shopper_analytics_export.csv",
         mime="text/csv"
     )
-
-# ===================== AI INSIGHTS =====================
-st.markdown("## 🧠 AI Insights")
-
-for insight in generate_insights(filtered):
-    st.success(insight)
