@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from datetime import datetime
 from src.data_preprocessing import preprocess_data
 from src.clustering import perform_clustering
 from src.insights_generator import generate_insights
@@ -14,59 +15,91 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------------- SCIFI UI STYLING ----------------
+# ---------------- HUD UI STYLING ----------------
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Inter:wght@300;600&display=swap');
 
-    /* Global Background & Typography */
+    /* Background: Deep Cosmic Radial */
     .stApp {
         background: radial-gradient(circle at center, #0f172a 0%, #000000 100%);
-        color: #e2e8f0;
+        color: #f8fafc;
         font-family: 'Inter', sans-serif;
     }
 
-    /* Futuristic Headers */
-    h1, h2, h3, .persona-header {
+    /* Glowing Sci-Fi Headers */
+    h1 {
         font-family: 'Orbitron', sans-serif !important;
-        letter-spacing: 3px;
+        font-weight: 900 !important;
+        letter-spacing: -1px !important;
         text-transform: uppercase;
-        color: #ffffff;
-        text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.2);
+        color: #ffffff !important;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.4) !important;
+        font-size: 3.5rem !important;
+        text-align: center;
+        margin-bottom: 0px !important;
     }
-
-    /* Cyberpunk Sidebar */
-    [data-testid="stSidebar"] {
-        background: rgba(15, 23, 42, 0.95);
-        border-right: 1px solid #00d4ff;
+    
+    .sub-text {
+        text-align: center;
+        font-size: 0.8rem;
+        letter-spacing: 0.5rem;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 40px;
     }
 
     /* Glassmorphism Hub Cards */
     div[data-testid="metric-container"], .stPlotlyChart, .persona-card {
-        background: rgba(255, 255, 255, 0.02) !important;
-        border: 1px solid rgba(0, 212, 255, 0.2) !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         backdrop-filter: blur(15px);
-        border-radius: 10px;
-        padding: 25px;
-        transition: 0.3s ease-in-out;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
     }
-    
-    div[data-testid="metric-container"]:hover {
-        border: 1px solid #00d4ff !important;
+
+    /* Sidebar HUD Look */
+    [data-testid="stSidebar"] {
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    /* Tab Styling: Rounded Pill HUD */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 15px;
+        justify-content: center;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        border-radius: 50px !important;
+        padding: 8px 30px !important;
+        background: rgba(255,255,255,0.02) !important;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.7rem;
+    }
+    .stTabs [aria-selected="true"] {
+        border-color: #00d4ff !important;
+        color: #00d4ff !important;
         box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
     }
 
-    /* Glowing Metrics */
-    [data-testid="stMetricValue"] {
-        color: #00d4ff !important;
-        font-family: 'Orbitron', sans-serif;
-        text-shadow: 0 0 5px #00d4ff;
+    /* Footer Pill */
+    .footer-pill {
+        display: flex;
+        justify-content: center;
+        margin-top: 50px;
     }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: #000; }
-    ::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 10px; }
+    .pill-content {
+        padding: 8px 25px;
+        border-radius: 50px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.05);
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.6);
+        letter-spacing: 2px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -85,9 +118,9 @@ def load_and_process():
 
 df_original = load_and_process()
 
-# ---------------- SIDEBAR INTERFACE ----------------
+# ---------------- SIDEBAR NAVIGATION ----------------
 with st.sidebar:
-    st.markdown("<h2 style='text-align:center;'>CORE SYSTEM</h2>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align:center; font-family:Orbitron;'>SYSTEM CORE</h3>", unsafe_allow_html=True)
     st.divider()
     
     with st.expander("📡 SENSOR FILTERS", expanded=True):
@@ -101,67 +134,80 @@ filtered_df = df_original[
     (df_original["Season"].isin(season))
 ]
 
-# ---------------- MAIN INTERFACE ----------------
-st.markdown("<h1 style='text-align:center;'>INTRODUCTION TO <br>DEEP INTELLIGENCE</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; opacity:0.6;'>Neural Customer Segmentation & Pattern Recognition</p>", unsafe_allow_html=True)
+# ---------------- MAIN VIEWPORT ----------------
+st.markdown("<p class='sub-text'>Introduction To</p>", unsafe_allow_html=True)
+st.markdown("<h1>Deep Learning</h1>", unsafe_allow_html=True)
 
 if filtered_df.empty:
-    st.warning("SYSTEM ALERT: No data detected in selected sectors.")
+    st.warning("SYSTEM ALERT: No data signature detected in current sectors.")
     st.stop()
 
-tab1, tab2, tab3 = st.tabs(["[ 📊 SYSTEM OVERVIEW ]", "[ 🧠 NEURAL INSIGHTS ]", "[ 📂 RAW BYTES ]"])
+tab_overview, tab_insights, tab_raw = st.tabs(["[ 📊 DATA OVERVIEW ]", "[ 🧠 NEURAL ANALYSIS ]", "[ 💾 DATA EXPORT ]"])
 
-with tab1:
+with tab_overview:
+    # KPI Grid
     m1, m2, m3, m4 = st.columns(4)
     avg_spend = filtered_df["Purchase Amount (USD)"].mean()
     
-    m1.metric("NODES (CUSTOMERS)", f"{len(filtered_df):,}")
+    m1.metric("TOTAL NODES", f"{len(filtered_df):,}")
     m2.metric("AVG THROUGHPUT", f"${avg_spend:.2f}")
-    m3.metric("NEURAL CLUSTERS", filtered_df["Cluster"].nunique())
-    m4.metric("PEAK CATEGORY", filtered_df["Category"].mode()[0])
+    m3.metric("ACTIVE CLUSTERS", filtered_df["Cluster"].nunique())
+    m4.metric("PEAK SECTOR", filtered_df["Category"].mode()[0])
 
     st.markdown("<br>", unsafe_allow_html=True)
     
+    # Visualization HUD
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader("Cluster Density")
+        st.subheader("Cluster Density Matrix")
         chart_data = filtered_df["Cluster"].value_counts().reset_index()
-        chart_data.columns = ['ID', 'Value']
-        fig_bar = px.bar(chart_data, x="ID", y="Value", color="Value",
+        chart_data.columns = ['Cluster_ID', 'Value']
+        fig_bar = px.bar(chart_data, x="Cluster_ID", y="Value", color="Value",
                          color_continuous_scale="Electric", template="plotly_dark")
         fig_bar.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_bar, use_container_width=True)
 
     with c2:
-        st.subheader("Sector Allocation")
+        st.subheader("Neural Distribution")
         fig_pie = px.pie(filtered_df, names="Cluster", hole=0.6,
                          color_discrete_sequence=px.colors.sequential.Plasma_r, template="plotly_dark")
         fig_pie.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_pie, use_container_width=True)
 
-with tab2:
-    st.subheader("🧬 Logic Matrix")
+with tab_insights:
+    st.subheader("🧬 Correlation Synapse")
     numeric_df = filtered_df.select_dtypes(include=["number"])
     fig_heat = px.imshow(numeric_df.corr(), text_auto=".2f", color_continuous_scale="Viridis", template="plotly_dark")
     st.plotly_chart(fig_heat, use_container_width=True)
     
-    st.markdown("---")
-    
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown("### 🧠 AI SYNAPSE")
+        st.markdown("### 🧠 Logic Output")
         for insight in generate_insights(filtered_df):
-            st.success(f"ANALYSIS: {insight}")
+            st.info(f"SYNAPSE: {insight}")
 
     with col_b:
         top_c = filtered_df["Cluster"].value_counts().idxmax()
         st.markdown(f"""
             <div class="persona-card">
-                <div class="persona-header">ARCHETYPE: NODE {top_c}</div>
-                <p style='color:#00d4ff'><b>INTENSITY:</b> High spending in {category[0] if category else 'various'} sectors.</p>
-                <p><b>BEHAVIOR:</b> Responds to high-tech personalization and algorithmic targeting.</p>
+                <h3 style='color:#00d4ff; margin-top:0;'>ARCHETYPE: NODE {top_c}</h3>
+                <p><b>Spending Priority:</b> High concentration in {category[0] if category else 'diverse'} sectors.</p>
+                <p><b>Strategic Vector:</b> Target with algorithmic precision and personalized rewards.</p>
             </div>
         """, unsafe_allow_html=True)
 
-with tab3:
+with tab_raw:
+    st.markdown("### 📂 Filtered Byte Data")
     st.dataframe(filtered_df.style.background_gradient(cmap='Blues'), use_container_width=True)
+    
+    csv = filtered_df.to_csv(index=False).encode("utf-8")
+    st.download_button(label="⬇️ EXPORT DATASTREAM", data=csv, file_name="shopper_export.csv", mime="text/csv")
+
+# ---------------- FOOTER ----------------
+st.markdown(f"""
+    <div class="footer-pill">
+        <div class="pill-content">
+            {datetime.now().strftime('%d %B, %Y')}
+        </div>
+    </div>
+""", unsafe_allow_html=True)
