@@ -29,7 +29,7 @@ clustered_df, _ = perform_clustering(df_scaled)
 df_original["Cluster"] = clustered_df["Cluster"]
 
 # ---------------- FILTERS ----------------
-st.sidebar.header("🔍 Filters")
+st.sidebar.header("Filters")
 
 gender = st.sidebar.multiselect(
     "Gender", df_original["Gender"].unique(), default=df_original["Gender"].unique()
@@ -51,26 +51,26 @@ filtered_df = df_original[
 
 # ---------------- HANDLE EMPTY DATA ----------------
 if filtered_df.empty:
-    st.warning("⚠️ No data available for selected filters. Please change filters.")
+    st.warning(" No data available for selected filters. Please change filters.")
     st.stop()
 
 # ---------------- KPI SECTION ----------------
-st.markdown("## 📌 Key Metrics")
+st.markdown("## Key Metrics")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric("👥 Customers", len(filtered_df))
+    st.metric("Customers", len(filtered_df))
 
 with col2:
     avg_spend = filtered_df["Purchase Amount (USD)"].mean()
-    st.metric("💰 Avg Spending", f"${avg_spend:.2f}")
+    st.metric(" Avg Spending", f"${avg_spend:.2f}")
 
 with col3:
-    st.metric("🧩 Clusters", filtered_df["Cluster"].nunique())
+    st.metric(" Clusters", filtered_df["Cluster"].nunique())
 
 # ---------------- CHARTS ----------------
-st.markdown("## 📊 Visual Insights")
+st.markdown("##  Visual Insights")
 
 col4, col5 = st.columns(2)
 
@@ -95,7 +95,7 @@ with col5:
     st.pyplot(fig2)
 
 # ---------------- HEATMAP ----------------
-st.markdown("## 🔥 Correlation Heatmap")
+st.markdown("##  Correlation Heatmap")
 
 numeric_df = filtered_df.select_dtypes(include=["int64", "float64"])
 corr = numeric_df.corr()
@@ -109,29 +109,29 @@ ax3.set_yticklabels(corr.columns)
 plt.colorbar(im)
 st.pyplot(fig3)
 
-st.markdown("## 📥 Download Filtered Data")
+st.markdown("## Download Filtered Data")
 
 csv = filtered_df.to_csv(index=False).encode("utf-8")
 
 st.download_button(
-    label="⬇️ Download CSV",
-    data=csv,
+    label="Download CSV",
+    data=csv
     file_name="filtered_customer_data.csv",
     mime="text/csv"
 )
 
 # ---------------- AI INSIGHTS ----------------
-st.markdown("## 🧠 AI Insights")
+st.markdown("##  AI Insights")
 
 for insight in generate_insights(filtered_df):
-    st.markdown(f"✅ {insight}")
+    st.markdown(f" {insight}")
 
 # ---------------- DATA PREVIEW ----------------
-with st.expander("📂 View Filtered Data"):
+with st.expander(" View Filtered Data"):
     st.dataframe(filtered_df.head(10))
 
 #-------------------Auto summary -----------------------------------
-st.markdown("## 🧠 Auto Summary")
+st.markdown("##  Auto Summary")
 
 avg_spend = filtered_df["Purchase Amount (USD)"].mean()
 top_cluster = filtered_df["Cluster"].value_counts().idxmax()
