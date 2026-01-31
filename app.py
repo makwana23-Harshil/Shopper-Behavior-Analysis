@@ -109,6 +109,17 @@ ax3.set_yticklabels(corr.columns)
 plt.colorbar(im)
 st.pyplot(fig3)
 
+st.markdown("## 📥 Download Filtered Data")
+
+csv = filtered_df.to_csv(index=False).encode("utf-8")
+
+st.download_button(
+    label="⬇️ Download CSV",
+    data=csv,
+    file_name="filtered_customer_data.csv",
+    mime="text/csv"
+)
+
 # ---------------- AI INSIGHTS ----------------
 st.markdown("## 🧠 AI Insights")
 
