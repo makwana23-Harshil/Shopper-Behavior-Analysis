@@ -1,162 +1,188 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
 
 from src.data_preprocessing import preprocess_data
 from src.clustering import perform_clustering
 from src.insights_generator import generate_insights
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="Shopper Behavior Analytics", layout="wide")
+# ===================== CONFIG =====================
+st.set_page_config(
+    page_title="Shopper Intelligence",
+    page_icon="🛍️",
+    layout="wide"
+)
 
-# ---------------- DARK MODE ----------------
-dark_mode = st.sidebar.toggle("🌙 Dark Mode")
+# ===================== CSS (GLASSMORPHISM) =====================
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
-if dark_mode:
-    st.markdown("""
-        <style>
-        .stApp { background-color: #0f172a; color: white; }
-        </style>
-    """, unsafe_allow_html=True)
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
 
-# ---------------- HEADER ----------------
-st.markdown("<h1 style='text-align:center;'>🛍 Shopper Behavior Analysis</h1>", unsafe_allow_html=True)
+.main {
+    background: linear-gradient(135deg, #0f172a, #020617);
+    color: white;
+}
 
-# ---------------- LOAD DATA ----------------
+.glass {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    padding: 20px;
+    border-radius: 16px;
+    color: white;
+    text-align: center;
+}
+
+.sidebar .sidebar-content {
+    background: linear-gradient(180deg, #020617, #0f172a);
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ===================== DATA =====================
 RAW_PATH = "data/raw_data.csv"
-df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed_data.csv")
-clustered_df, _ = perform_clustering(df_scaled)
-df_original["Cluster"] = clustered_df["Cluster"]
+df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed.csv")
+df_clustered, _ = perform_clustering(df_scaled)
+df_original["Cluster"] = df_clustered["Cluster"]
 
-# ---------------- FILTERS ----------------
-st.sidebar.header("🔍 Filters")
+# ===================== SIDEBAR =====================
+st.sidebar.markdown("## 🔍 Filters")
 
-gender = st.sidebar.multiselect(
-    "Gender", df_original["Gender"].unique(), default=df_original["Gender"].unique()
-)
+gender = st.sidebar.multiselect("Gender", df_original["Gender"].unique(),
+                                 default=df_original["Gender"].unique())
 
-category = st.sidebar.multiselect(
-    "Category", df_original["Category"].unique(), default=df_original["Category"].unique()
-)
+category = st.sidebar.multiselect("Category", df_original["Category"].unique(),
+                                   default=df_original["Category"].unique())
 
-season = st.sidebar.multiselect(
-    "Season", df_original["Season"].unique(), default=df_original["Season"].unique()
-)
+season = st.sidebar.multiselect("Season", df_original["Season"].unique(),
+                                 default=df_original["Season"].unique())
 
-filtered_df = df_original[
+filtered = df_original[
     (df_original["Gender"].isin(gender)) &
     (df_original["Category"].isin(category)) &
     (df_original["Season"].isin(season))
 ]
 
-# ---------------- HANDLE EMPTY DATA ----------------
-if filtered_df.empty:
-    st.warning("⚠️ No data available for selected filters. Please change filters.")
-    st.stop()
+# ===================== HEADER =====================
+st.markdown("""
+<h1 style='text-align:center;'>🛍 Shopper Behavior Intelligence</h1>
+<p style='text-align:center;'>AI-powered consumer analytics dashboard</p>
+""", unsafe_allow_html=True)
 
-# ---------------- KPI SECTION ----------------
-st.markdown("## 📌 Key Metrics")
+# ===================== TABS =====================
+tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Deep Analytics", "📁 Raw Data"])
 
-col1, col2, col3 = st.columns(3)
+# ======================================================
+# ===================== TAB 1 ==========================
+# ======================================================
+with tab1:
+    st.markdown("### 📌 Key Metrics")
 
-with col1:
-    st.metric("👥 Customers", len(filtered_df))
+    col1, col2, col3 = st.columns(3)
 
-with col2:
-    avg_spend = filtered_df["Purchase Amount (USD)"].mean()
-    st.metric("💰 Avg Spending", f"${avg_spend:.2f}")
+    col1.markdown(f"""
+    <div class='metric-card'>
+        <h3>{len(filtered)}</h3>
+        <p>Total Customers</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-with col3:
-    st.metric("🧩 Clusters", filtered_df["Cluster"].nunique())
+    col2.markdown(f"""
+    <div class='metric-card'>
+        <h3>${filtered['Purchase Amount (USD)'].mean():.2f}</h3>
+        <p>Avg Spending</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# ---------------- CHARTS ----------------
-st.markdown("## 📊 Visual Insights")
+    col3.markdown(f"""
+    <div class='metric-card'>
+        <h3>{filtered['Cluster'].nunique()}</h3>
+        <p>Customer Segments</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-col4, col5 = st.columns(2)
+    # ---------------- CHARTS ----------------
+    st.markdown("### 📊 Customer Distribution")
 
-# Bar Chart
-with col4:
-    st.subheader("Customer Segments")
-    fig1, ax1 = plt.subplots()
-    filtered_df["Cluster"].value_counts().plot(
-        kind="bar", ax=ax1, color="#3b82f6"
+    fig1 = px.bar(
+        filtered,
+        x="Cluster",
+        title="Customer Segments",
+        color="Cluster",
+        template="plotly_dark"
     )
-    ax1.set_ylabel("Customers")
-    st.pyplot(fig1)
 
-# Pie Chart
-with col5:
-    st.subheader("Cluster Distribution")
-    fig2, ax2 = plt.subplots()
-    filtered_df["Cluster"].value_counts().plot(
-        kind="pie", autopct="%1.1f%%", ax=ax2
+    fig2 = px.pie(
+        filtered,
+        names="Cluster",
+        title="Cluster Share",
+        hole=0.45,
+        template="plotly_dark"
     )
-    ax2.set_ylabel("")
-    st.pyplot(fig2)
 
-# ---------------- HEATMAP ----------------
-st.markdown("## 🔥 Correlation Heatmap")
+    col4, col5 = st.columns(2)
+    col4.plotly_chart(fig1, use_container_width=True)
+    col5.plotly_chart(fig2, use_container_width=True)
 
-numeric_df = filtered_df.select_dtypes(include=["int64", "float64"])
-corr = numeric_df.corr()
+# ======================================================
+# ===================== TAB 2 ==========================
+# ======================================================
+with tab2:
+    st.markdown("### 🔥 Correlation Heatmap")
 
-fig3, ax3 = plt.subplots(figsize=(10, 6))
-im = ax3.imshow(corr, cmap="coolwarm")
-ax3.set_xticks(range(len(corr.columns)))
-ax3.set_yticks(range(len(corr.columns)))
-ax3.set_xticklabels(corr.columns, rotation=45, ha="right")
-ax3.set_yticklabels(corr.columns)
-plt.colorbar(im)
-st.pyplot(fig3)
+    corr = filtered.select_dtypes("number").corr()
 
-st.markdown("## 📥 Download Filtered Data")
+    heatmap = px.imshow(
+        corr,
+        text_auto=True,
+        color_continuous_scale="viridis",
+        title="Feature Correlation Matrix"
+    )
 
-csv = filtered_df.to_csv(index=False).encode("utf-8")
+    st.plotly_chart(heatmap, use_container_width=True)
 
-st.download_button(
-    label="⬇️ Download CSV",
-    data=csv,
-    file_name="filtered_customer_data.csv",
-    mime="text/csv"
-)
+    # ---------------- PERSONA CARD ----------------
+    st.markdown("### 👤 Customer Persona")
 
-# ---------------- AI INSIGHTS ----------------
+    top_cluster = filtered["Cluster"].value_counts().idxmax()
+
+    st.markdown(f"""
+    <div class='glass'>
+        <h3>🎯 Primary Customer Persona</h3>
+        <p><b>Cluster:</b> {top_cluster}</p>
+        <p><b>Spending:</b> Moderate to High</p>
+        <p><b>Behavior:</b> Repeat buyer, promotion responsive</p>
+        <p><b>Business Insight:</b> Ideal for loyalty & upselling campaigns</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ======================================================
+# ===================== TAB 3 ==========================
+# ======================================================
+with tab3:
+    st.markdown("### 📁 Raw Dataset")
+    st.dataframe(filtered, use_container_width=True)
+
+    st.download_button(
+        "⬇ Download CSV",
+        data=filtered.to_csv(index=False),
+        file_name="filtered_data.csv",
+        mime="text/csv"
+    )
+
+# ===================== AI INSIGHTS =====================
 st.markdown("## 🧠 AI Insights")
 
-for insight in generate_insights(filtered_df):
-    st.markdown(f"✅ {insight}")
-
-# ---------------- DATA PREVIEW ----------------
-with st.expander("📂 View Filtered Data"):
-    st.dataframe(filtered_df.head(10))
-
-#-------------------Auto summary -----------------------------------
-st.markdown("## 🧠 Auto Summary")
-
-avg_spend = filtered_df["Purchase Amount (USD)"].mean()
-top_cluster = filtered_df["Cluster"].value_counts().idxmax()
-total_customers = len(filtered_df)
-
-summary_text = f"""
-This dataset contains **{total_customers} customers**.  
-The **average spending is ${avg_spend:.2f}**, indicating moderate purchasing behavior.  
-**Cluster {top_cluster}** represents the dominant customer group, suggesting a major opportunity for targeted marketing.  
-Overall, customer behavior shows clear segmentation patterns that can be used for personalization, promotions, and retention strategies.
-"""
-
-st.info(summary_text)
-
-#__________________________
-st.markdown("## 👤 Customer Persona")
-
-persona = f"""
-### 🧍 Typical Customer Profile
-
-• **Spending Behavior:** Moderate spender  
-• **Shopping Pattern:** Belongs to Cluster {top_cluster}  
-• **Price Sensitivity:** Responds well to discounts  
-• **Engagement Level:** Medium to High  
-• **Business Insight:** Best target for loyalty programs and personalized offers
-"""
-
-st.success(persona)
+for insight in generate_insights(filtered):
+    st.success(insight)
