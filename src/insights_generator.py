@@ -1,36 +1,54 @@
+import pandas as pd
+
 def generate_insights(df):
     insights = []
 
-    # Average spending
-    avg_spend = df["Purchase Amount (USD)"].mean()
-    insights.append(f"💰 Average customer spending is ${avg_spend:.2f}")
+    # -----------------------------
+    # Average Spending
+    # -----------------------------
+    if "Purchase Amount (USD)" in df.columns:
+        avg_spend = pd.to_numeric(
+            df["Purchase Amount (USD)"], errors="coerce"
+        ).mean()
+        insights.append(f"💰 Average customer spending is ${avg_spend:.2f}")
 
-    # Most active cluster
-    top_cluster = df["Cluster"].value_counts().idxmax()
-    insights.append(
-        f"👥 Cluster {top_cluster} contains the highest number of customers, "
-        f"indicating the dominant shopper group."
-    )
-
-    # High value customers
-    high_spenders = df[df["Purchase Amount (USD)"] > df["Purchase Amount (USD)"].mean()]
-    insights.append(
-        f"🔥 {len(high_spenders)} customers spend above average and are ideal targets for premium offers."
-    )
-
-    # Discount behavior
-    if "Discount Applied" in df.columns:
-        discount_users = df[df["Discount Applied"] == 1]
+    # -----------------------------
+    # Largest Cluster
+    # -----------------------------
+    if "Cluster" in df.columns:
+        top_cluster = df["Cluster"].value_counts().idxmax()
         insights.append(
-            f"🏷️ {len(discount_users)} customers are influenced by discounts, "
-            f"suggesting promotions strongly affect purchases."
+            f"👥 Cluster {top_cluster} contains the highest number of customers."
         )
 
-    # Purchase frequency
+    # -----------------------------
+    # High Value Customers
+    # -----------------------------
+    if "Purchase Amount (USD)" in df.columns:
+        high_value = df[
+            pd.to_numeric(df["Purchase Amount (USD)"], errors="coerce")
+            > avg_spend
+        ]
+        insights.append(
+            f"🔥 {len(high_value)} customers spend above average and are high-value users."
+        )
+
+    # -----------------------------
+    # Frequency Insight (SAFE)
+    # -----------------------------
     if "Frequency of Purchases" in df.columns:
-        freq_avg = df["Frequency of Purchases"].mean()
-        insights.append(
-            f"🔁 Average purchase frequency is {freq_avg:.1f}, showing moderate repeat buying behavior."
+        freq_numeric = pd.to_numeric(
+            df["Frequency of Purchases"], errors="coerce"
         )
+
+        if freq_numeric.notna().sum() > 0:
+            freq_avg = freq_numeric.mean()
+            insights.append(
+                f"🔁 Average purchase frequency is {freq_avg:.1f}."
+            )
+        else:
+            insights.append(
+                "🔁 Purchase frequency data is categorical and used for segmentation."
+            )
 
     return insights
