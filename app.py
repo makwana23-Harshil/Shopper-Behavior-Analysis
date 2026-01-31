@@ -8,79 +8,92 @@ from src.insights_generator import generate_insights
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Shopper Intelligence | Analytics",
-    page_icon="🛍️",
+    page_title="Deep Shopper Intelligence",
+    page_icon="🧬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ---------------- CUSTOM UI STYLING ----------------
+# ---------------- SCIFI UI STYLING ----------------
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;600&display=swap');
 
-    html, body, [class*="css"] {
+    /* Global Background & Typography */
+    .stApp {
+        background: radial-gradient(circle at center, #0f172a 0%, #000000 100%);
+        color: #e2e8f0;
         font-family: 'Inter', sans-serif;
     }
 
-    .stApp {
-        background: radial-gradient(circle at top left, #1e293b, #0f172a);
-        color: #f8fafc;
+    /* Futuristic Headers */
+    h1, h2, h3, .persona-header {
+        font-family: 'Orbitron', sans-serif !important;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.2);
     }
 
+    /* Cyberpunk Sidebar */
     [data-testid="stSidebar"] {
-        background-image: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(15, 23, 42, 0.95);
+        border-right: 1px solid #00d4ff;
     }
 
+    /* Glassmorphism Hub Cards */
     div[data-testid="metric-container"], .stPlotlyChart, .persona-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    }
-
-    .persona-card {
-        border-left: 5px solid #6366f1;
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(0, 212, 255, 0.2) !important;
+        backdrop-filter: blur(15px);
+        border-radius: 10px;
+        padding: 25px;
+        transition: 0.3s ease-in-out;
     }
     
-    .persona-header {
-        color: #6366f1;
-        font-weight: 800;
-        margin-bottom: 10px;
+    div[data-testid="metric-container"]:hover {
+        border: 1px solid #00d4ff !important;
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
     }
 
+    /* Glowing Metrics */
     [data-testid="stMetricValue"] {
-        font-weight: 700;
-        color: #6366f1;
+        color: #00d4ff !important;
+        font-family: 'Orbitron', sans-serif;
+        text-shadow: 0 0 5px #00d4ff;
     }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
 # ---------------- DATA LOADING ----------------
 @st.cache_data
 def load_and_process():
-    RAW_PATH = "data/raw_data.csv"
-    df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed_data.csv")
-    clustered_df, _ = perform_clustering(df_scaled)
-    df_original["Cluster"] = clustered_df["Cluster"]
-    return df_original
+    try:
+        RAW_PATH = "data/raw_data.csv"
+        df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed_data.csv")
+        clustered_df, _ = perform_clustering(df_scaled)
+        df_original["Cluster"] = clustered_df["Cluster"]
+        return df_original
+    except Exception as e:
+        st.error(f"System Linkage Failure: {e}")
+        return pd.DataFrame()
 
 df_original = load_and_process()
 
-# ---------------- SIDEBAR FILTERS ----------------
+# ---------------- SIDEBAR INTERFACE ----------------
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3081/3081559.png", width=80)
-    st.title("Filters")
+    st.markdown("<h2 style='text-align:center;'>CORE SYSTEM</h2>", unsafe_allow_html=True)
+    st.divider()
     
-    with st.expander("🎯 Target Demographics", expanded=True):
-        gender = st.multiselect("Gender", df_original["Gender"].unique(), default=list(df_original["Gender"].unique()))
-        season = st.multiselect("Season", df_original["Season"].unique(), default=list(df_original["Season"].unique()))
-
-    with st.expander("📦 Product Categories", expanded=True):
-        category = st.multiselect("Category", df_original["Category"].unique(), default=list(df_original["Category"].unique()))
+    with st.expander("📡 SENSOR FILTERS", expanded=True):
+        gender = st.multiselect("GENDER SOURCE", df_original["Gender"].unique(), default=list(df_original["Gender"].unique()))
+        season = st.multiselect("TEMPORAL CYCLE", df_original["Season"].unique(), default=list(df_original["Season"].unique()))
+        category = st.multiselect("SECTOR CATEGORY", df_original["Category"].unique(), default=list(df_original["Category"].unique()))
 
 filtered_df = df_original[
     (df_original["Gender"].isin(gender)) &
@@ -88,94 +101,67 @@ filtered_df = df_original[
     (df_original["Season"].isin(season))
 ]
 
-# ---------------- HEADER ----------------
-st.markdown("# 🛍️ Shopper Behavior Intelligence")
-st.markdown("Analyze customer segmentation and purchasing patterns with AI-driven insights.")
+# ---------------- MAIN INTERFACE ----------------
+st.markdown("<h1 style='text-align:center;'>INTRODUCTION TO <br>DEEP INTELLIGENCE</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; opacity:0.6;'>Neural Customer Segmentation & Pattern Recognition</p>", unsafe_allow_html=True)
 
 if filtered_df.empty:
-    st.warning("⚠️ No data matches your filter criteria.")
+    st.warning("SYSTEM ALERT: No data detected in selected sectors.")
     st.stop()
 
-# ---------------- MAIN TABS ----------------
-tab_overview, tab_deep_dive, tab_data = st.tabs(["📈 Overview", "🧠 AI & Personas", "💾 Raw Data"])
+tab1, tab2, tab3 = st.tabs(["[ 📊 SYSTEM OVERVIEW ]", "[ 🧠 NEURAL INSIGHTS ]", "[ 📂 RAW BYTES ]"])
 
-with tab_overview:
-    col1, col2, col3, col4 = st.columns(4)
+with tab1:
+    m1, m2, m3, m4 = st.columns(4)
     avg_spend = filtered_df["Purchase Amount (USD)"].mean()
     
-    col1.metric("Total Customers", f"{len(filtered_df):,}")
-    col2.metric("Avg Spending", f"${avg_spend:.2f}")
-    col3.metric("Active Clusters", filtered_df["Cluster"].nunique())
-    col4.metric("Top Category", filtered_df["Category"].mode()[0])
+    m1.metric("NODES (CUSTOMERS)", f"{len(filtered_df):,}")
+    m2.metric("AVG THROUGHPUT", f"${avg_spend:.2f}")
+    m3.metric("NEURAL CLUSTERS", filtered_df["Cluster"].nunique())
+    m4.metric("PEAK CATEGORY", filtered_df["Category"].mode()[0])
 
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
     c1, c2 = st.columns(2)
-    
     with c1:
-        st.subheader("Customer Segments")
-        # FIXED: Explicitly naming columns to avoid ValueError
+        st.subheader("Cluster Density")
         chart_data = filtered_df["Cluster"].value_counts().reset_index()
-        chart_data.columns = ['Cluster_ID', 'Count'] 
-
-        fig_bar = px.bar(
-            chart_data,
-            x="Cluster_ID", 
-            y="Count",
-            labels={"Cluster_ID": "Cluster Group", "Count": "Customer Count"},
-            color="Cluster_ID",
-            color_continuous_scale="Viridis",
-            template="plotly_dark"
-        )
-        fig_bar.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        chart_data.columns = ['ID', 'Value']
+        fig_bar = px.bar(chart_data, x="ID", y="Value", color="Value",
+                         color_continuous_scale="Electric", template="plotly_dark")
+        fig_bar.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_bar, use_container_width=True)
 
     with c2:
-        st.subheader("Distribution %")
-        fig_pie = px.pie(
-            filtered_df, names="Cluster",
-            hole=0.4,
-            color_discrete_sequence=px.colors.sequential.RdBu,
-            template="plotly_dark"
-        )
-        fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        st.subheader("Sector Allocation")
+        fig_pie = px.pie(filtered_df, names="Cluster", hole=0.6,
+                         color_discrete_sequence=px.colors.sequential.Plasma_r, template="plotly_dark")
+        fig_pie.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_pie, use_container_width=True)
 
-    st.subheader("🔥 Feature Correlation Matrix")
+with tab2:
+    st.subheader("🧬 Logic Matrix")
     numeric_df = filtered_df.select_dtypes(include=["number"])
-    corr = numeric_df.corr()
-    fig_heat = px.imshow(
-        corr, text_auto=".2f",
-        color_continuous_scale="RdBu_r",
-        aspect="auto",
-        template="plotly_dark"
-    )
+    fig_heat = px.imshow(numeric_df.corr(), text_auto=".2f", color_continuous_scale="Viridis", template="plotly_dark")
     st.plotly_chart(fig_heat, use_container_width=True)
-
-with tab_deep_dive:
-    col_a, col_b = st.columns([1, 1])
     
+    st.markdown("---")
+    
+    col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown("### 🧠 AI Strategic Insights")
+        st.markdown("### 🧠 AI SYNAPSE")
         for insight in generate_insights(filtered_df):
-            st.info(f"💡 {insight}")
+            st.success(f"ANALYSIS: {insight}")
 
     with col_b:
-        st.markdown("### 👤 Customer Persona")
-        top_cluster = filtered_df["Cluster"].value_counts().idxmax()
+        top_c = filtered_df["Cluster"].value_counts().idxmax()
         st.markdown(f"""
             <div class="persona-card">
-                <div class="persona-header">PRIMARY ARCHETYPE: Cluster {top_cluster}</div>
-                <p><b>Spending Profile:</b> ${avg_spend:.2f} (Average)</p>
-                <p><b>Psychographics:</b> High engagement in {season[0] if season else 'all seasons'}.</p>
-                <p><b>Recommendation:</b> Deploy loyalty rewards and personalized email triggers 
-                based on {category[0] if category else 'general'} purchase history.</p>
+                <div class="persona-header">ARCHETYPE: NODE {top_c}</div>
+                <p style='color:#00d4ff'><b>INTENSITY:</b> High spending in {category[0] if category else 'various'} sectors.</p>
+                <p><b>BEHAVIOR:</b> Responds to high-tech personalization and algorithmic targeting.</p>
             </div>
         """, unsafe_allow_html=True)
 
-with tab_data:
-    st.markdown("### 📂 Filtered Dataset")
-    st.dataframe(filtered_df, use_container_width=True)
-    
-    csv = filtered_df.to_csv(index=False).encode("utf-8")
-    st.download_button(label="⬇️ Export Data", data=csv, file_name="export.csv", mime="text/csv")
+with tab3:
+    st.dataframe(filtered_df.style.background_gradient(cmap='Blues'), use_container_width=True)
