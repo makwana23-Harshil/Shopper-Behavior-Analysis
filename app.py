@@ -1,213 +1,164 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime
+
 from src.data_preprocessing import preprocess_data
 from src.clustering import perform_clustering
 from src.insights_generator import generate_insights
 
-# ---------------- PAGE CONFIG ----------------
+# ================= PAGE CONFIG =================
 st.set_page_config(
     page_title="Deep Shopper Intelligence",
     page_icon="🧬",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# ---------------- HUD UI STYLING ----------------
+# ================= CSS =================
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Inter:wght@300;600&display=swap');
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;600&display=swap');
 
-    /* Background: Deep Cosmic Radial */
-    .stApp {
-        background: radial-gradient(circle at center, #0f172a 0%, #000000 100%);
-        color: #f8fafc;
-        font-family: 'Inter', sans-serif;
-    }
+.stApp {
+    background: radial-gradient(circle at center, #0f172a 0%, #000000 100%);
+    color: white;
+    font-family: 'Inter', sans-serif;
+}
 
-    /* Glowing Sci-Fi Headers */
-    h1 {
-        font-family: 'Orbitron', sans-serif !important;
-        font-weight: 900 !important;
-        letter-spacing: -1px !important;
-        text-transform: uppercase;
-        color: #ffffff !important;
-        text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.4) !important;
-        font-size: 3.5rem !important;
-        text-align: center;
-        margin-bottom: 0px !important;
-    }
-    
-    .sub-text {
-        text-align: center;
-        font-size: 0.8rem;
-        letter-spacing: 0.5rem;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.5);
-        margin-bottom: 40px;
-    }
+h1 {
+    font-family: 'Orbitron', sans-serif;
+    text-align: center;
+    color: white;
+    text-shadow: 0 0 15px rgba(0,212,255,0.7);
+}
 
-    /* Glassmorphism Hub Cards */
-    div[data-testid="metric-container"], .stPlotlyChart, .persona-card {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        backdrop-filter: blur(15px);
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-    }
+.metric-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
 
-    /* Sidebar HUD Look */
-    [data-testid="stSidebar"] {
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(10px);
-        border-right: 1px solid rgba(0, 212, 255, 0.2);
-    }
+.persona-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
 
-    /* Tab Styling: Rounded Pill HUD */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 15px;
-        justify-content: center;
-    }
-    .stTabs [data-baseweb="tab"] {
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 50px !important;
-        padding: 8px 30px !important;
-        background: rgba(255,255,255,0.02) !important;
-        font-family: 'Orbitron', sans-serif;
-        font-size: 0.7rem;
-    }
-    .stTabs [aria-selected="true"] {
-        border-color: #00d4ff !important;
-        color: #00d4ff !important;
-        box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
-    }
-
-    /* Footer Pill */
-    .footer-pill {
-        display: flex;
-        justify-content: center;
-        margin-top: 50px;
-    }
-    .pill-content {
-        padding: 8px 25px;
-        border-radius: 50px;
-        border: 1px solid rgba(255,255,255,0.1);
-        background: rgba(255,255,255,0.05);
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.6);
-        letter-spacing: 2px;
-    }
-    </style>
+</style>
 """, unsafe_allow_html=True)
 
-# ---------------- DATA LOADING ----------------
+# ================= LOAD DATA =================
 @st.cache_data
-def load_and_process():
-    try:
-        RAW_PATH = "data/raw_data.csv"
-        df_scaled, df_original = preprocess_data(RAW_PATH, "data/processed_data.csv")
-        clustered_df, _ = perform_clustering(df_scaled)
-        df_original["Cluster"] = clustered_df["Cluster"]
-        return df_original
-    except Exception as e:
-        st.error(f"System Linkage Failure: {e}")
-        return pd.DataFrame()
+def load_data():
+    df_scaled, df_original = preprocess_data("data/raw_data.csv", "data/processed.csv")
+    clustered, _ = perform_clustering(df_scaled)
+    df_original["Cluster"] = clustered["Cluster"]
+    return df_original
 
-df_original = load_and_process()
+df = load_data()
 
-# ---------------- SIDEBAR NAVIGATION ----------------
-with st.sidebar:
-    st.markdown("<h3 style='text-align:center; font-family:Orbitron;'>SYSTEM CORE</h3>", unsafe_allow_html=True)
-    st.divider()
-    
-    with st.expander("📡 SENSOR FILTERS", expanded=True):
-        gender = st.multiselect("GENDER SOURCE", df_original["Gender"].unique(), default=list(df_original["Gender"].unique()))
-        season = st.multiselect("TEMPORAL CYCLE", df_original["Season"].unique(), default=list(df_original["Season"].unique()))
-        category = st.multiselect("SECTOR CATEGORY", df_original["Category"].unique(), default=list(df_original["Category"].unique()))
+# ================= SIDEBAR =================
+st.sidebar.markdown("## 🔍 Filters")
 
-filtered_df = df_original[
-    (df_original["Gender"].isin(gender)) &
-    (df_original["Category"].isin(category)) &
-    (df_original["Season"].isin(season))
+gender = st.sidebar.multiselect("Gender", df["Gender"].unique(), df["Gender"].unique())
+category = st.sidebar.multiselect("Category", df["Category"].unique(), df["Category"].unique())
+season = st.sidebar.multiselect("Season", df["Season"].unique(), df["Season"].unique())
+
+filtered = df[
+    (df["Gender"].isin(gender)) &
+    (df["Category"].isin(category)) &
+    (df["Season"].isin(season))
 ]
 
-# ---------------- MAIN VIEWPORT ----------------
-st.markdown("<p class='sub-text'>Introduction To</p>", unsafe_allow_html=True)
-st.markdown("<h1>Deep Learning</h1>", unsafe_allow_html=True)
-
-if filtered_df.empty:
-    st.warning("SYSTEM ALERT: No data signature detected in current sectors.")
+# SAFETY CHECK
+if filtered.empty:
+    st.warning("⚠️ No data available for selected filters.")
     st.stop()
 
-tab_overview, tab_insights, tab_raw = st.tabs(["[ 📊 DATA OVERVIEW ]", "[ 🧠 NEURAL ANALYSIS ]", "[ 💾 DATA EXPORT ]"])
+# ================= HEADER =================
+st.markdown("<h1>🧬 Deep Shopper Intelligence</h1>", unsafe_allow_html=True)
 
-with tab_overview:
-    # KPI Grid
-    m1, m2, m3, m4 = st.columns(4)
-    avg_spend = filtered_df["Purchase Amount (USD)"].mean()
-    
-    m1.metric("TOTAL NODES", f"{len(filtered_df):,}")
-    m2.metric("AVG THROUGHPUT", f"${avg_spend:.2f}")
-    m3.metric("ACTIVE CLUSTERS", filtered_df["Cluster"].nunique())
-    m4.metric("PEAK SECTOR", filtered_df["Category"].mode()[0])
+tabs = st.tabs(["📊 Overview", "🧠 Intelligence", "📁 Data"])
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Visualization HUD
-    c1, c2 = st.columns(2)
-    with c1:
-        st.subheader("Cluster Density Matrix")
-        chart_data = filtered_df["Cluster"].value_counts().reset_index()
-        chart_data.columns = ['Cluster_ID', 'Value']
-        fig_bar = px.bar(chart_data, x="Cluster_ID", y="Value", color="Value",
-                         color_continuous_scale="Electric", template="plotly_dark")
-        fig_bar.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_bar, use_container_width=True)
+# ================= OVERVIEW =================
+with tabs[0]:
+    c1, c2, c3, c4 = st.columns(4)
 
-    with c2:
-        st.subheader("Neural Distribution")
-        fig_pie = px.pie(filtered_df, names="Cluster", hole=0.6,
-                         color_discrete_sequence=px.colors.sequential.Plasma_r, template="plotly_dark")
-        fig_pie.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_pie, use_container_width=True)
+    c1.metric("Customers", len(filtered))
+    c2.metric("Avg Spend", f"${filtered['Purchase Amount (USD)'].mean():.2f}")
+    c3.metric("Clusters", filtered["Cluster"].nunique())
+    c4.metric("Top Category", filtered["Category"].mode()[0])
 
-with tab_insights:
-    st.subheader("🧬 Correlation Synapse")
-    numeric_df = filtered_df.select_dtypes(include=["number"])
-    fig_heat = px.imshow(numeric_df.corr(), text_auto=".2f", color_continuous_scale="Viridis", template="plotly_dark")
-    st.plotly_chart(fig_heat, use_container_width=True)
-    
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.markdown("### 🧠 Logic Output")
-        for insight in generate_insights(filtered_df):
-            st.info(f"SYNAPSE: {insight}")
+    colA, colB = st.columns(2)
 
-    with col_b:
-        top_c = filtered_df["Cluster"].value_counts().idxmax()
+    with colA:
+        fig1 = px.bar(
+            filtered["Cluster"].value_counts().reset_index(),
+            x="index", y="Cluster",
+            color="Cluster",
+            template="plotly_dark",
+            title="Customer Distribution"
+        )
+        st.plotly_chart(fig1, use_container_width=True)
+
+    with colB:
+        fig2 = px.pie(
+            filtered,
+            names="Cluster",
+            hole=0.5,
+            template="plotly_dark",
+            title="Cluster Share"
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+# ================= INTELLIGENCE =================
+with tabs[1]:
+    st.subheader("🧠 Correlation Matrix")
+
+    corr = filtered.select_dtypes("number").corr()
+    fig = px.imshow(
+        corr,
+        color_continuous_scale="viridis",
+        text_auto=True,
+        template="plotly_dark"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    colL, colR = st.columns(2)
+
+    with colL:
+        st.subheader("AI Insights")
+        for i in generate_insights(filtered):
+            st.success(i)
+
+    with colR:
+        top_cluster = filtered["Cluster"].value_counts().idxmax()
         st.markdown(f"""
-            <div class="persona-card">
-                <h3 style='color:#00d4ff; margin-top:0;'>ARCHETYPE: NODE {top_c}</h3>
-                <p><b>Spending Priority:</b> High concentration in {category[0] if category else 'diverse'} sectors.</p>
-                <p><b>Strategic Vector:</b> Target with algorithmic precision and personalized rewards.</p>
-            </div>
+        <div class="persona-card">
+            <h3>👤 Customer Persona</h3>
+            <p><b>Cluster:</b> {top_cluster}</p>
+            <p><b>Behavior:</b> High engagement, value-driven</p>
+            <p><b>Strategy:</b> Target with loyalty & personalization</p>
+        </div>
         """, unsafe_allow_html=True)
 
-with tab_raw:
-    st.markdown("### 📂 Filtered Byte Data")
-    st.dataframe(filtered_df.style.background_gradient(cmap='Blues'), use_container_width=True)
-    
-    csv = filtered_df.to_csv(index=False).encode("utf-8")
-    st.download_button(label="⬇️ EXPORT DATASTREAM", data=csv, file_name="shopper_export.csv", mime="text/csv")
+# ================= RAW DATA =================
+with tabs[2]:
+    st.dataframe(filtered, use_container_width=True)
 
-# ---------------- FOOTER ----------------
-st.markdown(f"""
-    <div class="footer-pill">
-        <div class="pill-content">
-            {datetime.now().strftime('%d %B, %Y')}
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+    st.download_button(
+        "⬇ Download CSV",
+        filtered.to_csv(index=False),
+        "filtered_data.csv",
+        "text/csv"
+    )
+
+# ================= FOOTER =================
+st.markdown(
+    f"<div style='text-align:center;opacity:0.5;margin-top:30px;'>"
+    f"{datetime.now().strftime('%d %B %Y')}</div>",
+    unsafe_allow_html=True
+)
