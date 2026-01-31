@@ -19,24 +19,20 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
-    /* Global Styles */
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
 
-    /* Main Background */
     .stApp {
         background: radial-gradient(circle at top left, #1e293b, #0f172a);
         color: #f8fafc;
     }
 
-    /* Sidebar Gradient */
     [data-testid="stSidebar"] {
         background-image: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Glassmorphism Cards */
     div[data-testid="metric-container"], .stPlotlyChart, .persona-card {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -46,7 +42,6 @@ st.markdown("""
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     }
 
-    /* Profile Card Styling */
     .persona-card {
         border-left: 5px solid #6366f1;
     }
@@ -57,7 +52,6 @@ st.markdown("""
         margin-bottom: 10px;
     }
 
-    /* Metric Formatting */
     [data-testid="stMetricValue"] {
         font-weight: 700;
         color: #6366f1;
@@ -65,7 +59,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------- DATA LOADING (Cached for Speed) ----------------
+# ---------------- DATA LOADING ----------------
 @st.cache_data
 def load_and_process():
     RAW_PATH = "data/raw_data.csv"
@@ -82,11 +76,11 @@ with st.sidebar:
     st.title("Filters")
     
     with st.expander("🎯 Target Demographics", expanded=True):
-        gender = st.multiselect("Gender", df_original["Gender"].unique(), default=df_original["Gender"].unique())
-        season = st.multiselect("Season", df_original["Season"].unique(), default=df_original["Season"].unique())
+        gender = st.multiselect("Gender", df_original["Gender"].unique(), default=list(df_original["Gender"].unique()))
+        season = st.multiselect("Season", df_original["Season"].unique(), default=list(df_original["Season"].unique()))
 
     with st.expander("📦 Product Categories", expanded=True):
-        category = st.multiselect("Category", df_original["Category"].unique(), default=df_original["Category"].unique())
+        category = st.multiselect("Category", df_original["Category"].unique(), default=list(df_original["Category"].unique()))
 
 filtered_df = df_original[
     (df_original["Gender"].isin(gender)) &
@@ -106,7 +100,6 @@ if filtered_df.empty:
 tab_overview, tab_deep_dive, tab_data = st.tabs(["📈 Overview", "🧠 AI & Personas", "💾 Raw Data"])
 
 with tab_overview:
-    # KPI Metrics
     col1, col2, col3, col4 = st.columns(4)
     avg_spend = filtered_df["Purchase Amount (USD)"].mean()
     
@@ -117,16 +110,20 @@ with tab_overview:
 
     st.markdown("---")
     
-    # Plotly Charts
     c1, c2 = st.columns(2)
     
     with c1:
         st.subheader("Customer Segments")
+        # FIXED: Explicitly naming columns to avoid ValueError
+        chart_data = filtered_df["Cluster"].value_counts().reset_index()
+        chart_data.columns = ['Cluster_ID', 'Count'] 
+
         fig_bar = px.bar(
-            filtered_df["Cluster"].value_counts().reset_index(),
-            x="index", y="Cluster",
-            labels={"index": "Cluster", "Cluster": "Count"},
-            color="Cluster",
+            chart_data,
+            x="Cluster_ID", 
+            y="Count",
+            labels={"Cluster_ID": "Cluster Group", "Count": "Customer Count"},
+            color="Cluster_ID",
             color_continuous_scale="Viridis",
             template="plotly_dark"
         )
@@ -144,13 +141,13 @@ with tab_overview:
         fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_pie, use_container_width=True)
 
-    # Correlation Heatmap
     st.subheader("🔥 Feature Correlation Matrix")
-    numeric_df = filtered_df.select_dtypes(include=["int64", "float64"])
+    numeric_df = filtered_df.select_dtypes(include=["number"])
     corr = numeric_df.corr()
     fig_heat = px.imshow(
         corr, text_auto=".2f",
         color_continuous_scale="RdBu_r",
+        aspect="auto",
         template="plotly_dark"
     )
     st.plotly_chart(fig_heat, use_container_width=True)
@@ -172,7 +169,7 @@ with tab_deep_dive:
                 <p><b>Spending Profile:</b> ${avg_spend:.2f} (Average)</p>
                 <p><b>Psychographics:</b> High engagement in {season[0] if season else 'all seasons'}.</p>
                 <p><b>Recommendation:</b> Deploy loyalty rewards and personalized email triggers 
-                based on {category[0] if category else 'previous'} purchase history.</p>
+                based on {category[0] if category else 'general'} purchase history.</p>
             </div>
         """, unsafe_allow_html=True)
 
@@ -181,9 +178,4 @@ with tab_data:
     st.dataframe(filtered_df, use_container_width=True)
     
     csv = filtered_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label="⬇️ Export Data as CSV",
-        data=csv,
-        file_name="shopper_analytics_export.csv",
-        mime="text/csv"
-    )
+    st.download_button(label="⬇️ Export Data", data=csv, file_name="export.csv", mime="text/csv")
